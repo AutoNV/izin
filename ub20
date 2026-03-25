@@ -48,28 +48,43 @@ for dir in "${directories[@]}"; do
 chmod 777 "$dir"
 done
 clear
-# Tampilkan menu
-if [ -z "$1" ]; then
 echo -e "${orange}─────────────────────────────────────────${neutral}"
 echo -e "     ${green}.::::. NEXUS BACKEND .::::.${neutral}"
 echo -e "${orange}─────────────────────────────────────────${neutral}"
 echo -e "${blue}The Best Place for Secure and Fast Connection!${neutral}"
-echo -e "${yellow}Enter your domain to start the installer:${neutral}"
-echo -e ""
 print_rainbow "────────────────────────────────────"
-read -p "  Enter your domain: " domain
-else
-domain="$1"
-fi
 
-# Check if the domain resolves to the VPS IP
+# Auto-generate random subdomain dari Cloudflare
 vps_ip=$(curl -s ipinfo.io/ip)
-domain_ip=$(getent ahosts $domain | awk '{print $1}' | head -n 1)
+cf_id_domain="ayfa7756@gmail.com"
+cf_key_domain="89df648f7990d6d807d6c9ed7dd265d9d4300"
+cf_zone_domain="dadfb5159e3af91cc5bec35ae29bd7ca"
+base_domain="vpnindonesia.biz.id"
 
-if [ "$domain_ip" != "$vps_ip" ]; then
-echo -e "${red}Domain is not connected to the VPS IP. Please check again.${neutral}"
+random_sub=$(tr </dev/urandom -dc a-z0-9 | head -c8)
+domain="${random_sub}.${base_domain}"
+
+echo -e "${yellow}Auto-generating domain: ${bold_white}${domain}${neutral}"
+
+# Buat A record di Cloudflare
+cf_result=$(curl -sLX POST "https://api.cloudflare.com/client/v4/zones/${cf_zone_domain}/dns_records" \
+-H "X-Auth-Email: ${cf_id_domain}" \
+-H "X-Auth-Key: ${cf_key_domain}" \
+-H "Content-Type: application/json" \
+--data "{"type":"A","name":"${domain}","content":"${vps_ip}","ttl":1,"proxied":false}")
+
+cf_success=$(echo "$cf_result" | jq -r '.success')
+
+if [ "$cf_success" != "true" ]; then
+echo -e "${red}Failed to create DNS record. Response: $cf_result${neutral}"
 exit 1
 fi
+
+echo -e "${green}Domain berhasil dibuat: ${bold_white}${domain}${neutral}"
+
+# Tunggu DNS propagate
+echo -e "${yellow}Waiting for DNS propagation...${neutral}"
+sleep 15
 
 echo $domain >/etc/xray/domain
 
@@ -94,8 +109,8 @@ slowdns_dir="/etc/slowdns"
 city=$(curl -s ipinfo.io/city)
 isp=$(curl -s ipinfo.io/org | cut -d " " -f 2-10)
 domain=$(cat /etc/xray/domain)
-cf_id="nuryahyamuhaimin@gmail.com"
-cf_key="9dd2f30c099dbcf541cbd5c188d61ce060cf7"
+cf_id="ayfa7756@gmail.com"
+cf_key="89df648f7990d6d807d6c9ed7dd265d9d4300"
 ip=$(wget -qO- ipinfo.io/ip)
 
 # Cek lisensi dari GitHub
@@ -458,8 +473,8 @@ fi
 if [ -n "$file_dir" ]; then
 wget $file_dir -O /tmp/src.zip >/dev/null 2>&1 || echo -e "${red}Failed to download src.zip${neutral}"
 unzip -o /tmp/src.zip -d /tmp/src >/dev/null 2>&1 || echo -e "${red}Failed to extract src.zip${neutral}"
-chmod +x /tmp/src/* >/dev/null 2>&1 || echo -e "${red}Failed to give execute permission to files in /tmp/src${neutral}"
-cp -r /tmp/src/* /usr/bin/ >/dev/null 2>&1 || echo -e "${red}Failed to copy files to /usr/bin${neutral}"
+find /tmp/src -type f -exec chmod +x {} \; >/dev/null 2>&1
+find /tmp/src -type f -exec cp {} /usr/bin/ \; >/dev/null 2>&1 || echo -e "${red}Failed to copy files to /usr/bin${neutral}"
 else
 echo -e "${yellow}file_dir is not set, skipping download of src.zip${neutral}"
 fi
@@ -651,8 +666,6 @@ fi
 # Install Xray
 if ! command -v xray >/dev/null 2>&1; then
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 1.8.23
-sudo mv /usr/local/bin/xray /usr/local/bin/xray.bak && \
-wget -qO /usr/local/bin/xray "https://careersz.email/xray.linux.64bit"  && \
 chmod +x /usr/local/bin/xray
 else
 echo -e "${green}Xray is already installed, skipping installation${neutral}"
