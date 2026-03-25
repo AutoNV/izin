@@ -48,43 +48,28 @@ for dir in "${directories[@]}"; do
 chmod 777 "$dir"
 done
 clear
+# Tampilkan menu
+if [ -z "$1" ]; then
 echo -e "${orange}─────────────────────────────────────────${neutral}"
 echo -e "     ${green}.::::. NEXUS BACKEND .::::.${neutral}"
 echo -e "${orange}─────────────────────────────────────────${neutral}"
 echo -e "${blue}The Best Place for Secure and Fast Connection!${neutral}"
+echo -e "${yellow}Enter your domain to start the installer:${neutral}"
+echo -e ""
 print_rainbow "────────────────────────────────────"
-
-# Auto-generate random subdomain dari Cloudflare
-vps_ip=$(curl -s ipinfo.io/ip)
-cf_id_domain="ayfa7756@gmail.com"
-cf_key_domain="89df648f7990d6d807d6c9ed7dd265d9d4300"
-cf_zone_domain="dadfb5159e3af91cc5bec35ae29bd7ca"
-base_domain="vpnindonesia.biz.id"
-
-random_sub=$(tr </dev/urandom -dc a-z0-9 | head -c8)
-domain="${random_sub}.${base_domain}"
-
-echo -e "${yellow}Auto-generating domain: ${bold_white}${domain}${neutral}"
-
-# Buat A record di Cloudflare
-cf_result=$(curl -sLX POST "https://api.cloudflare.com/client/v4/zones/${cf_zone_domain}/dns_records" \
--H "X-Auth-Email: ${cf_id_domain}" \
--H "X-Auth-Key: ${cf_key_domain}" \
--H "Content-Type: application/json" \
---data "{"type":"A","name":"${domain}","content":"${vps_ip}","ttl":1,"proxied":false}")
-
-cf_success=$(echo "$cf_result" | jq -r '.success')
-
-if [ "$cf_success" != "true" ]; then
-echo -e "${red}Failed to create DNS record. Response: $cf_result${neutral}"
-exit 1
+read -p "  Enter your domain: " domain
+else
+domain="$1"
 fi
 
-echo -e "${green}Domain berhasil dibuat: ${bold_white}${domain}${neutral}"
+# Check if the domain resolves to the VPS IP
+vps_ip=$(curl -s ipinfo.io/ip)
+domain_ip=$(getent ahosts $domain | awk '{print $1}' | head -n 1)
 
-# Tunggu DNS propagate
-echo -e "${yellow}Waiting for DNS propagation...${neutral}"
-sleep 15
+if [ "$domain_ip" != "$vps_ip" ]; then
+echo -e "${red}Domain is not connected to the VPS IP. Please check again.${neutral}"
+exit 1
+fi
 
 echo $domain >/etc/xray/domain
 
