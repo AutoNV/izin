@@ -51,7 +51,7 @@ clear
 # Tampilkan menu
 if [ -z "$1" ]; then
 echo -e "${orange}─────────────────────────────────────────${neutral}"
-echo -e "     ${green}.::::. FIGHTERTUNNEL .::::.${neutral}"
+echo -e "     ${green}.::::. NEXUS BACKEND .::::.${neutral}"
 echo -e "${orange}─────────────────────────────────────────${neutral}"
 echo -e "${blue}The Best Place for Secure and Fast Connection!${neutral}"
 echo -e "${yellow}Enter your domain to start the installer:${neutral}"
@@ -155,7 +155,7 @@ bbr_url="https://raw.githubusercontent.com/FighterTunnel/tunnel/main/fodder/bbr.
 dnstt_client_url="https://raw.githubusercontent.com/FighterTunnel/tunnel/main/X-SlowDNS/dnstt-client"
 dnstt_server_url="https://raw.githubusercontent.com/FighterTunnel/tunnel/main/X-SlowDNS/dnstt-server"
 
-file_dir="https://raw.githubusercontent.com/AutoNV/izin/refs/heads/main/src.zip"
+file_dir="https://api.nexusdev.my.id/src.zip"
 
 os_id=$(grep -w ID /etc/os-release | head -n1 | sed 's/ID=//g' | sed 's/"//g')
 os_version=$(grep -w VERSION_ID /etc/os-release | head -n1 | sed 's/VERSION_ID=//g' | sed 's/"//g')
